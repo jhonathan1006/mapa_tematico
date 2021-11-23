@@ -1,0 +1,174 @@
+head(nbi_santander)
+head(nbi_santander$Cod_dep)
+class(nbi_santander$Cod_dep)
+datos <- factor(nbi_santander$Cod_dep)
+class(datos)
+
+library(rgdal)
+library(sp)
+library(sf)
+library(ggplot2)
+library(knitr)
+library(readxl)
+library(rgeos)
+library(raster)
+library(cartography)
+library(SpatialPosition)
+
+dep <- st_read("E:/A_UTS/2020 -II/Docencia/Cartografia digital/11 Elaboracion de mapas tematicos/Datos taller/shape/departamentos.shp")
+dep
+class(dep$)
+
+#join to relacion 
+cant <- merge(dep, nbi_santander,by.x="DPTO_CCDGO",by.y="Cod_dep")
+summary(cant$DPTO_CNMBR)
+cant
+# cargamos la libreria 
+library(osmdata)
+
+mun.osm <- getTiles(
+  x = cant, 
+  type = "OpenStreetMap", 
+  zoom = 6,
+  cachedir = TRUE,
+  crop = FALSE
+)
+
+# para establecer margenes 
+opar <- par(mar = c(0,0,2,0))
+
+
+tilesLayer(x = mun.osm)
+# plotear losbordes de los municipios 
+plot(st_geometry(cant), col = NA, border = "red", add=TRUE)
+
+# plotear la tasa de miseria en Cesar
+propSymbolsLayer(
+  x = cant, 
+  var = "fallecidos", 
+  inches = 0.15, 
+  col = "lightblue",
+  legend.pos = "topright",  
+  legend.title.txt = "Cantidad de fallecidos"
+)
+
+# uso de layout
+layoutLayer(title = " Mapa de Cantidad de fallecidos por Covid ",
+            sources = "Fuente: Minsalud 2020\n© OpenStreetMap",
+            author = " Aponte Saravia ",
+            frame = TRUE, north = TRUE, tabtitle = TRUE)
+# flecha indicadora de norte
+north(pos = "topleft")
+
+#mapa de coropletas 
+
+# Margenes
+opar <- par(mar = c(0,0,1,0))
+# color del  background
+par(bg="grey90")
+# plotear municipios 
+plot(st_geometry(cant), col = NA, border = "red", bg = "#aadaff")
+
+
+# plotear tasa de Hacinamiento
+choroLayer(
+  x = cant, 
+  var = "fallecidos",
+  method = "geom",
+  nclass=8,
+  col = carto.pal(pal1 = "green.pal", n1 = 6),
+  border = "white", 
+  lwd = 0.5,
+  legend.pos = "topleft", 
+  legend.title.txt = "Cantidad de fallecidos",
+  add = TRUE
+) 
+
+propSymbolsLayer(
+  x = cant, 
+  var = "fallecidos", 
+  inches = 0.15, 
+  col = "lightblue",
+  legend.pos = "topright",  
+  legend.title.txt = "Cantidad de fallecidos"
+)
+
+# layout
+layoutLayer(title = "Fallecidos por covid", 
+            sources = "Minsalud, 2020",
+            author = "Aponte Saravia", 
+            frame = TRUE, north = FALSE, tabtitle = TRUE, col="black")
+
+
+###############################
+choroLayer(
+  x = cant, 
+  var = "fallecidos",
+  method = "geom",
+  nclass=5,
+  col = carto.pal(pal1 = "sand.pal", n1 = 5),
+  border = "white", 
+  lwd = 0.5,
+  legend.pos = "topright", 
+  legend.title.txt = "Fallecidos covid",
+  add = TRUE
+) 
+
+labelLayer(
+  x = cant, 
+  txt = "DPTO_CNMBR", 
+  col= "white", 
+  cex = 0.4, 
+  font = 4,
+  halo = TRUE, 
+  bg = "grey25", 
+  r = 0.1, 
+  overlap = FALSE, 
+  show.lines = FALSE
+)
+
+layoutLayer(
+  title = "Fallecidos covid", 
+  sources = "Minsalud, 2020",  
+  author = "Aponte Saravia", 
+  frame = TRUE,
+  north = TRUE, 
+  tabtitle = TRUE, 
+  theme = "taupe.pal"
+) 
+north(pos = "topleft")
+
+##################################################
+opar <- par(mar = c(0,0,1.2,0))
+plot(st_geometry(cant), col = NA, border = "black", bg = "grey75")
+
+smoothLayer(
+  x = cant, 
+  var = 'hospitalizados',
+  typefct = "exponential",
+  span = 20000,
+  beta = 2,
+  nclass = 10,
+  col = carto.pal(pal1 = 'harmo.pal', n1 = 10),
+  border = "grey",
+  lwd = 0.1, 
+  mask = cant, 
+  legend.values.rnd = -3,
+  legend.title.txt = "Hospitalizados",
+  legend.pos = "right", 
+  add=TRUE)
+
+text(x = 650000, y = 1200000, cex = 0.6, adj = 0, font = 3, labels = "Función distancia:\n- type = exponential\n- beta = 2\n- span = 50 km")
+
+layoutLayer(
+  title = "Fallecidos covid", 
+  sources = "Minsalud, 2020",  
+  author = "Aponte Saravia", 
+  frame = TRUE,
+  north = FALSE, 
+  tabtitle = TRUE, 
+  theme = "taupe.pal"
+) 
+north(pos = "topleft")
+
+
